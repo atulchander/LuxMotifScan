@@ -14,6 +14,10 @@ The workflow performs:
 - Python 3.x
 - MEME Suite (FIMO)
 
+## Input requirements
+Input FASTA files must contain unique contig identifiers that match those
+used in corresponding GFF annotation files.
+
 ## Execution environment
 Scripts were executed on a Linux-based high-performance computing (HPC)
 system. Paths and parallelization parameters may require adjustment for
