@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+title: "LuxMotifScan: A MEME/FIMO-based Lux-box motif scanning workflow"
+authors:
+  - family-names: Chander
+    given-names: Atul
+version: 1.0.0
+date-released: 2026-01-09
+repository-code: https://github.com/atulchander/LuxMotifScan
