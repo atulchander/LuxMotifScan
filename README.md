@@ -28,7 +28,7 @@ This repository is provided to support transparency and reproducibility
 for the associated publication.
 
 ## Underlying software
-LuxMotifScan relies on the MEME Suite, including FIMO, for motif scanning.
+LuxMotifScan relies on the MEME Suite (https://meme-suite.org), including FIMO (https://meme-suite.org/meme/doc/fimo.html), for motif scanning.
 Users should cite the original MEME Suite and FIMO publications when
 using this workflow.
 
