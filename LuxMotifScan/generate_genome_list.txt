@@ -1,0 +1,7 @@
+# Generate a list of reference genome FASTA files for motif scanning
+
+PROJECT_DIR="/path/to/project"
+
+find "$PROJECT_DIR/Exobiology_metaT_reference_genomes" \
+     -type f \( -name "*.fa" -o -name "*.fna" \) \
+     > "$PROJECT_DIR/reference_genomes.list"
