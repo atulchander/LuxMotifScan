@@ -36,3 +36,7 @@ LuxMotifScan relies on the MEME Suite (https://meme-suite.org), including FIMO (
 Users should cite the original MEME Suite and FIMO publications when
 using this workflow.
 
+LuxMotifScan also relies on data from the publication mentioned below, so users may cite this research article if using this tool.
+
+Septer, Alecia N., and Karen L. Visick. "Lighting the way: how the Vibrio fischeri model microbe reveals the complexity of Earth’s “simplest” life forms." Journal of Bacteriology 206, no. 5 (2024): e00035-24.
+
