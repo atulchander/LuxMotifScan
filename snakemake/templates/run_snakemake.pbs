@@ -1,0 +1,23 @@
+#!/bin/bash
+#PBS -N luxmotifscan
+#PBS -q workq
+#PBS -l select=1:ncpus=12:mem=32gb
+#PBS -l walltime=04:00:00
+#PBS -j oe
+
+set -e
+set -o pipefail
+
+# EDIT THESE:
+REPO_DIR="/path/to/luxmotifscan"
+BASE_DIR="/path/to/base_dir"
+RUN_ID="run1"
+CORES="12"
+
+cd "$REPO_DIR"
+
+# Activate your driver env (created from workflow/envs/driver.yml)
+source "$HOME/Softwares/miniconda3/etc/profile.d/conda.sh"
+conda activate lux_smk24
+
+./run.sh run "$BASE_DIR" "$RUN_ID" "$CORES"

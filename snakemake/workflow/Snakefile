@@ -1,0 +1,84 @@
+import os
+
+configfile: "config/config.yaml"
+
+BASE = (config.get("base_dir") or "").rstrip("/")
+RUN_ID = config.get("run_id") or "run1"
+MAXJ = int(config.get("max_jobs", 12))
+
+if not BASE:
+    raise ValueError("base_dir is required. Run with: --config base_dir=/path/to/base_dir run_id=run1 max_jobs=12")
+
+REPO_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+MOTIF = f"{BASE}/lux_motifs.meme"
+LIST  = f"{BASE}/reference_genomes.list"
+OUT_SUMMARY = f"{BASE}/fimo_output/fimo_run_{RUN_ID}/fimo_summary.csv"
+OUT_LOG     = f"{BASE}/fimo_output/fimo_run_{RUN_ID}/fimo_run.log"
+
+rule all:
+    input:
+        MOTIF,
+        LIST,
+        OUT_SUMMARY,
+        OUT_LOG
+
+rule w0a_prepare_paths:
+    output:
+        touch(f"{BASE}/.w0a.done")
+    shell:
+        r"""
+        cd "{BASE}"
+        LUX_BASE_DIR="{BASE}" bash "{REPO_DIR}/W0a_prepare_project_paths.sh"
+        touch "{output}"
+        """
+
+rule w0b_prepare_gff_fasta:
+    input:
+        f"{BASE}/.w0a.done"
+    output:
+        touch(f"{BASE}/.w0b.done")
+    shell:
+        r"""
+        cd "{BASE}"
+        LUX_BASE_DIR="{BASE}" bash "{REPO_DIR}/W0b_prepare_gff_fasta_consistent_contigs.sh"
+        touch "{output}"
+        """
+
+rule w0c_build_motifs:
+    input:
+        f"{BASE}/.w0b.done"
+    output:
+        MOTIF
+    shell:
+        r"""
+        cd "{BASE}"
+        LUX_BASE_DIR="{BASE}" python3 "{REPO_DIR}/W0c_build_lux_motifs.py"
+        """
+
+rule w0d_genome_list:
+    input:
+        f"{BASE}/.w0b.done"
+    output:
+        LIST
+    shell:
+        r"""
+        cd "{BASE}"
+        LUX_BASE_DIR="{BASE}" bash "{REPO_DIR}/W0d_generate_genome_list.sh"
+        """
+
+rule w1_run_fimo:
+    input:
+        motifs=MOTIF,
+        lst=LIST
+    output:
+        summary=OUT_SUMMARY,
+        log=OUT_LOG
+    threads: MAXJ
+    conda:
+        "envs/meme.yml"
+    shell:
+        r"""
+        cd "{BASE}"
+        LUX_BASE_DIR="{BASE}" RUN_ID="{RUN_ID}" MAX_JOBS="{threads}" bash "{REPO_DIR}/W1_run_fimo_parallel.sh"
+        """
