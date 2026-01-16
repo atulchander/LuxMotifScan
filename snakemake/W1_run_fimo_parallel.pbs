@@ -4,8 +4,97 @@
 #PBS -j oe
 #PBS -l select=1:ncpus=12:mem=30gb
 #PBS -l walltime=24:00:00
-#PBS -m abe
-#PBS -M atul@olemiss.edu
 
-cd "$PBS_O_WORKDIR" || exit 1
+set -euo pipefail
+
+# Run from where qsub was launched (repo dir)
+cd "${PBS_O_WORKDIR:-$PWD}"
+
+# If you keep a condarc in the repo to avoid defaults channel:
+[[ -f "./condarc" ]] && export CONDARC="$PWD/condarc"
+
+# Avoid plugin weirdness on some clusters
+export CONDA_NO_PLUGINS=true
+
+# ---------- helpers ----------
+find_conda_sh() {
+  # 1) conda already on PATH
+  if command -v conda >/dev/null 2>&1; then
+    local base
+    base="$(conda info --base 2>/dev/null || true)"
+    if [[ -n "$base" && -f "$base/etc/profile.d/conda.sh" ]]; then
+      echo "$base/etc/profile.d/conda.sh"
+      return 0
+    fi
+  fi
+
+  # 2) user can provide CONDA_SH explicitly
+  if [[ -n "${CONDA_SH:-}" && -f "$CONDA_SH" ]]; then
+    echo "$CONDA_SH"
+    return 0
+  fi
+
+  # 3) common installs
+  for p in \
+    "$HOME/miniconda3/etc/profile.d/conda.sh" \
+    "$HOME/anaconda3/etc/profile.d/conda.sh" \
+    "$HOME/Softwares/miniconda3/etc/profile.d/conda.sh" \
+    "/opt/conda/etc/profile.d/conda.sh"
+  do
+    [[ -f "$p" ]] && { echo "$p"; return 0; }
+  done
+
+  # 4) optional module fallback (cluster-dependent)
+  if command -v module >/dev/null 2>&1; then
+    module --silent load miniconda 2>/dev/null || true
+    module --silent load anaconda 2>/dev/null || true
+    if command -v conda >/dev/null 2>&1; then
+      local base
+      base="$(conda info --base 2>/dev/null || true)"
+      [[ -n "$base" && -f "$base/etc/profile.d/conda.sh" ]] && { echo "$base/etc/profile.d/conda.sh"; return 0; }
+    fi
+  fi
+
+  return 1
+}
+
+# ---------- ensure fimo ----------
+# Option A: module-based MEME (if exists on this HPC)
+if ! command -v fimo >/dev/null 2>&1; then
+  if command -v module >/dev/null 2>&1; then
+    module --silent load meme 2>/dev/null || true
+    module --silent load meme-suite 2>/dev/null || true
+  fi
+fi
+
+# Option B: conda environment for MEME/FIMO
+if ! command -v fimo >/dev/null 2>&1; then
+  CONDA_PROFILE="$(find_conda_sh)" || {
+    echo "ERROR: Could not find conda on this node (and no MEME module provided)."
+    echo "Fix: load conda/miniconda module, or set CONDA_SH to your conda.sh path."
+    exit 2
+  }
+
+  # conda hooks sometimes touch unset vars
+  set +u
+  # shellcheck disable=SC1090
+  source "$CONDA_PROFILE"
+  set -u
+
+  MEME_ENV="${LUX_MEME_ENV:-luxmotifscan_meme}"
+
+  if conda env list | awk '{print $1}' | grep -qx "$MEME_ENV"; then
+    conda activate "$MEME_ENV"
+  else
+    echo "ERROR: conda env '$MEME_ENV' not found."
+    echo "Create it ONCE on a login node with internet, then rerun:"
+    echo "  conda env create -n $MEME_ENV -c conda-forge -c bioconda meme"
+    exit 2
+  fi
+fi
+
+command -v fimo >/dev/null 2>&1 || { echo "ERROR: fimo not in PATH after module/conda."; exit 2; }
+
+# Run W1
 ./W1_run_fimo_parallel.sh
+
