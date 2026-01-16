@@ -1,0 +1,4 @@
+# Example config (override via command line or edit locally)
+base_dir: /path/to/base_dir
+run_id: demo1
+max_jobs: 12

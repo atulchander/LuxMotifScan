@@ -1,0 +1,11 @@
+#!/bin/bash
+#PBS -N lux_fimo
+#PBS -q workq
+#PBS -j oe
+#PBS -l select=1:ncpus=12:mem=30gb
+#PBS -l walltime=24:00:00
+#PBS -m abe
+#PBS -M atul@olemiss.edu
+
+cd "$PBS_O_WORKDIR" || exit 1
+./W1_run_fimo_parallel.sh

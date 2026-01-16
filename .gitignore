@@ -1,5 +1,30 @@
-.snakemake/
+# ---- Snakemake runtime (anywhere) ----
+**/.snakemake/
+
+# ---- Pipeline outputs (anywhere) ----
+**/fimo_output/
+**/GFFnFASTA/
+**/reference_genomes.list
+**/lux_motifs.meme
+
+# ---- Scheduler logs ----
 *.o*
 *.e*
 *.out
 *.err
+
+# ---- General logs ----
+*.log
+
+# ---- OS/editor junk ----
+.DS_Store
+__MACOSX/
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# ---- Python ----
+__pycache__/
+*.pyc

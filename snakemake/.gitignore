@@ -1,0 +1,46 @@
+# ---- Snakemake runtime ----
+.snakemake/
+
+# ---- Pipeline outputs (never commit) ----
+fimo_output/
+GFFnFASTA/
+reference_genomes.list
+lux_motifs.meme
+
+# If someone accidentally runs with BASE_DIR inside the repo:
+**/fimo_output/
+**/GFFnFASTA/
+**/reference_genomes.list
+**/lux_motifs.meme
+
+# ---- Scheduler logs ----
+*.o*
+*.e*
+*.out
+*.err
+
+# ---- General logs ----
+*.log
+
+# ---- OS junk ----
+.DS_Store
+__MACOSX/
+Thumbs.db
+
+# ---- Editor/IDE ----
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# ---- Python ----
+__pycache__/
+*.pyc
+
+# ---- Optional: keep empty folders tracked ----
+logs/*
+profiles/*
+!logs/.gitkeep
+!profiles/.gitkeep
+

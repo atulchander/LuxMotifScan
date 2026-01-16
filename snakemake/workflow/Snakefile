@@ -1,0 +1,67 @@
+configfile: "config/config.yaml"
+
+BASE = config["base_dir"].rstrip("/")
+RUN_ID = config.get("run_id", "run1")
+MAXJ = int(config.get("max_jobs", 12))
+
+rule all:
+    input:
+        f"{BASE}/lux_motifs.meme",
+        f"{BASE}/reference_genomes.list",
+        f"{BASE}/fimo_output/fimo_run_{RUN_ID}/fimo_summary.csv",
+        f"{BASE}/fimo_output/fimo_run_{RUN_ID}/fimo_run.log"
+
+rule w0a_prepare_paths:
+    output:
+        touch(f"{BASE}/.w0a.done")
+    shell:
+        r"""
+        LUX_BASE_DIR="{BASE}" bash W0a_prepare_project_paths.sh
+        touch {output}
+        """
+
+rule w0b_prepare_gff_fasta:
+    input:
+        f"{BASE}/.w0a.done"
+    output:
+        touch(f"{BASE}/.w0b.done")
+    shell:
+        r"""
+        LUX_BASE_DIR="{BASE}" bash W0b_prepare_gff_fasta_consistent_contigs.sh
+        touch {output}
+        """
+
+rule w0c_build_motifs:
+    input:
+        f"{BASE}/.w0b.done"
+    output:
+        f"{BASE}/lux_motifs.meme"
+    shell:
+        r"""
+        LUX_BASE_DIR="{BASE}" python3 W0c_build_lux_motifs.py
+        """
+
+rule w0d_genome_list:
+    input:
+        f"{BASE}/.w0b.done"
+    output:
+        f"{BASE}/reference_genomes.list"
+    shell:
+        r"""
+        LUX_BASE_DIR="{BASE}" bash W0d_generate_genome_list.sh
+        """
+
+rule w1_run_fimo:
+    input:
+        motifs=f"{BASE}/lux_motifs.meme",
+        lst=f"{BASE}/reference_genomes.list"
+    output:
+        summary=f"{BASE}/fimo_output/fimo_run_{RUN_ID}/fimo_summary.csv",
+        log=f"{BASE}/fimo_output/fimo_run_{RUN_ID}/fimo_run.log"
+    threads: MAXJ
+    conda:
+        "envs/meme.yml"
+    shell:
+        r"""
+        LUX_BASE_DIR="{BASE}" RUN_ID="{RUN_ID}" MAX_JOBS="{threads}" bash W1_run_fimo_parallel.sh
+        """
