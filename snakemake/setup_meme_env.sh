@@ -1,26 +1,25 @@
-#!/bin/bash
-#PBS -N lux_fimo
-#PBS -q workq
-#PBS -j oe
-#PBS -l select=1:ncpus=12:mem=30gb
-#PBS -l walltime=24:00:00
-
+#!/usr/bin/env bash
 set -euo pipefail
 
-cd "${PBS_O_WORKDIR:-$PWD}"
+ENV_NAME="${1:-luxmotifscan_meme}"
 
-[[ -f "./condarc" ]] && export CONDARC="$PWD/condarc"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[[ -f "$REPO_DIR/condarc" ]] && export CONDARC="$REPO_DIR/condarc"
 
 CONDA_NO_PLUGINS_FLAG="--no-plugins"
-MEME_ENV="${LUX_MEME_ENV:-luxmotifscan_meme}"
 
 find_conda_sh() {
+  # If conda exists, get its base and use conda.sh from there
   if command -v conda >/dev/null 2>&1; then
     local base
     base="$(conda $CONDA_NO_PLUGINS_FLAG info --base 2>/dev/null || true)"
     [[ -n "$base" && -f "$base/etc/profile.d/conda.sh" ]] && { echo "$base/etc/profile.d/conda.sh"; return 0; }
   fi
+
+  # User override
   [[ -n "${CONDA_SH:-}" && -f "$CONDA_SH" ]] && { echo "$CONDA_SH"; return 0; }
+
+  # Common locations
   for p in \
     "$HOME/miniconda3/etc/profile.d/conda.sh" \
     "$HOME/anaconda3/etc/profile.d/conda.sh" \
@@ -29,9 +28,9 @@ find_conda_sh() {
   do
     [[ -f "$p" ]] && { echo "$p"; return 0; }
   done
+
+  # Optional module fallback
   if command -v module >/dev/null 2>&1; then
-    module --silent load meme 2>/dev/null || true
-    module --silent load meme-suite 2>/dev/null || true
     module --silent load miniconda 2>/dev/null || true
     module --silent load anaconda 2>/dev/null || true
     if command -v conda >/dev/null 2>&1; then
@@ -40,23 +39,12 @@ find_conda_sh() {
       [[ -n "$base" && -f "$base/etc/profile.d/conda.sh" ]] && { echo "$base/etc/profile.d/conda.sh"; return 0; }
     fi
   fi
+
   return 1
 }
 
-if command -v module >/dev/null 2>&1; then
-  module --silent load meme 2>/dev/null || true
-  module --silent load meme-suite 2>/dev/null || true
-fi
-
-if command -v fimo >/dev/null 2>&1; then
-  echo "Using FIMO from module/system: $(command -v fimo)"
-  ./W1_run_fimo_parallel.sh
-  exit 0
-fi
-
 CONDA_PROFILE="$(find_conda_sh)" || {
-  echo "ERROR: Could not find conda, and no MEME module provides fimo." >&2
-  echo "Fix: load conda module or set CONDA_SH=/path/to/conda.sh" >&2
+  echo "ERROR: conda not found. Load a conda/miniconda module or set CONDA_SH=/path/to/conda.sh" >&2
   exit 2
 }
 
@@ -64,13 +52,13 @@ set +u
 source "$CONDA_PROFILE"
 set -u
 
-if ! conda $CONDA_NO_PLUGINS_FLAG env list | awk '{print $1}' | grep -qx "$MEME_ENV"; then
-  echo "ERROR: conda env '$MEME_ENV' not found." >&2
-  echo "Create it ONCE on a login node with internet, then rerun:" >&2
-  echo "  ./setup_meme_env.sh $MEME_ENV" >&2
-  exit 2
+if conda $CONDA_NO_PLUGINS_FLAG env list | awk '{print $1}' | grep -qx "$ENV_NAME"; then
+  echo "OK: env exists: $ENV_NAME"
+else
+  echo "Creating conda env: $ENV_NAME (needs internet)"
+  conda $CONDA_NO_PLUGINS_FLAG create -y -n "$ENV_NAME" -c conda-forge -c bioconda meme
 fi
 
-echo "Using FIMO from conda env: $MEME_ENV"
-conda $CONDA_NO_PLUGINS_FLAG run -n "$MEME_ENV" --no-capture-output bash ./W1_run_fimo_parallel.sh
-
+conda $CONDA_NO_PLUGINS_FLAG run -n "$ENV_NAME" fimo --version >/dev/null
+echo "SUCCESS: fimo is available in env '$ENV_NAME'"
+echo "Tip: your PBS jobs will use this env by default, or set: export LUX_MEME_ENV=$ENV_NAME"
