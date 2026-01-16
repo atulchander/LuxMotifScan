@@ -64,39 +64,31 @@ After a successful run, BASE_DIR will contain:
 
 ## One-time setup (per user / per HPC account)
 
-You need:
+W1 needs **FIMO (MEME suite)** on compute nodes. On many HPC systems it is **not installed by default**, and PBS jobs do **not** inherit your interactive shell PATH.
 
-* Python 3
-* PBS/OpenPBS (`qsub`, `qstat`)
-* MEME Suite / **FIMO** available on compute nodes
+### Recommended (portable): create a conda MEME/FIMO env once
 
-### Option A (recommended): use conda to provide FIMO
-
-If your cluster allows conda installs (often login node has internet):
-
-1. Load/activate conda (example path; adjust if needed)
+Run this **once on a login node with internet**:
 
 ```bash
-source ~/Softwares/miniconda3/etc/profile.d/conda.sh
+cd LuxMotifScan/snakemake
+chmod +x setup_meme_env.sh
+./setup_meme_env.sh              # default env name: luxmotifscan_meme
+# or: ./setup_meme_env.sh myenv   # custom env name
 ```
 
-2. Create an environment that contains FIMO
+After this, **compute nodes can be offline** — the PBS job will run FIMO via:
+
+* cluster module (`module load meme`) if available, OR
+* `conda --no-plugins run -n <env> ...` using the env you created above
+
+### If you use a custom env name
+
+Set it before running the pipeline:
 
 ```bash
-conda create -n lux_fimo -c conda-forge -c bioconda -y meme
-conda activate lux_fimo
-fimo --version
+export LUX_MEME_ENV=myenv
 ```
-
-3. Make sure your PBS job environment can “see” that conda env (same conda install on compute nodes).
-
-> If your cluster blocks internet on compute nodes, create the env on the login node first.
-
-### Option B: use cluster modules
-
-If MEME/FIMO is provided as a module, load it in the PBS script used by W1.
-
----
 
 ## Run (the normal user flow)
 
