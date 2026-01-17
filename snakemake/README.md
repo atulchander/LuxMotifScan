@@ -89,6 +89,25 @@ Set it before running the pipeline:
 ```bash
 export LUX_MEME_ENV=myenv
 ```
+## Alternative to create env (not required)
+
+Before running the pipeline the first time, run the setup helper on a login node with internet (or any node allowed to download conda packages). This ensures MEME/FIMO is available for W1 PBS jobs.
+
+From snakemake/:
+
+# (optional) enforce conda-forge/bioconda only
+export CONDARC="$PWD/condarc"
+
+# run the setup helper (creates/checks required envs)
+./snakemake_setsup_env.sh all
+
+What it does:
+
+Ensures a MEME/FIMO conda env exists (default: luxmotifscan_meme)
+
+(If enabled in the script) can also create/check a Snakemake “driver” env and/or pre-create rule env caches
+
+If your cluster provides MEME as a module, the PBS script will try modules first; otherwise it will use the conda env.
 
 ## Run (the normal user flow)
 
